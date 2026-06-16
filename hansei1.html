@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="doc_title">한세대학교 학생 통합 민원서비스</title>
+    <style>
+        :root {
+            --primary-color: #04447c;
+            --secondary-color: #f4f6f9;
+            --accent-color: #e67e22;
+            --text-color: #333;
+        }
+
+        body { font-family: 'Malgun Gothic', sans-serif; margin: 0; padding: 0; background-color: var(--secondary-color); color: var(--text-color); display: flex; flex-direction: column; min-height: 100vh; }
+
+        header { background-color: #fff; border-bottom: 3px solid var(--primary-color); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .header-logo { display: flex; align-items: center; font-size: 1.4rem; font-weight: bold; color: var(--primary-color); }
+        .header-logo img { height: 45px; margin-right: 15px; object-fit: contain; }
+
+        .lang-selector button { background: #fff; border: 1px solid #ccc; padding: 6px 12px; margin-left: 5px; cursor: pointer; border-radius: 4px; font-size: 0.9rem; font-weight: bold; transition: all 0.2s; }
+        .lang-selector button:hover, .lang-selector button.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+
+        nav { background: var(--primary-color); display: flex; justify-content: center; }
+        nav a { color: white; padding: 14px 20px; text-decoration: none; text-align: center; font-weight: bold; cursor: pointer; }
+        nav a:hover { background: #03335c; }
+
+        .container { max-width: 1000px; margin: 30px auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); flex: 1; width: 90%; }
+        .page { display: none; } .page.active { display: block; }
+        h2 { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-top: 0; }
+
+        .welcome-box { background: #eef5fc; padding: 20px; border-radius: 6px; margin-bottom: 25px; line-height: 1.6; }
+        
+        .dept-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
+        .dept-card { background: #fff; border: 2px solid #ddd; border-radius: 8px; padding: 25px; text-align: center; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: all 0.2s; color: var(--primary-color); position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .dept-card:hover { transform: translateY(-5px); border-color: var(--primary-color); background-color: #f0f7ff; }
+        .dept-icon { font-size: 1.5rem; }
+        
+        .delete-card-btn { position: absolute; top: 8px; right: 8px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.8rem; line-height: 20px; padding: 0; display: none; }
+        .admin-mode .delete-card-btn { display: block; }
+
+        .search-section { margin-top: 40px; padding: 30px; background: #f9f9f9; border-top: 2px solid #ddd; border-radius: 6px; }
+        .search-box { display: flex; gap: 10px; margin-top: 15px; }
+        .search-box input { flex: 1; padding: 12px; font-size: 1rem; border: 2px solid var(--primary-color); border-radius: 4px; }
+        .search-box button { background: var(--primary-color); color: white; border: none; padding: 0 20px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        
+        .search-results-list { list-style: none; padding: 0; margin-top: 15px; }
+        .search-result-item { background: #fff; border: 1px solid #ddd; padding: 15px 20px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .search-result-info { display: flex; align-items: center; gap: 12px; }
+        .search-result-info strong { font-size: 1.1rem; color: #333; }
+        .dept-badge { background: #e1ecf4; color: #2c5e8a; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; }
+        .status-badge { padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; font-weight: bold; color: white; }
+        .status-badge.status_rec { background: #7f8c8d; }
+        .status-badge.status_ing { background: var(--accent-color); }
+        .status-badge.status_end { background: var(--primary-color); }
+        
+        .chart-section { margin-top: 30px; }
+        .chart-bar { background: #eee; border-radius: 4px; overflow: hidden; margin-bottom: 10px; display: flex; align-items: center; }
+        .chart-label { width: 140px; padding-left: 10px; font-weight: bold; font-size: 0.9rem; }
+        .chart-track { flex: 1; background: #eee; border-radius: 4px; margin-right: 10px; }
+        .chart-fill { background: var(--primary-color); color: white; padding: 5px 10px; text-align: right; font-size: 0.8rem; border-radius: 4px; transition: width 0.5s ease; }
+
+        .admin-edit-zone { background: #fdfefe; border: 2px dashed #04447c; padding: 20px; border-radius: 6px; margin-top: 25px; }
+        .category-manage-box { display: flex; gap: 10px; margin-top: 10px; }
+        .category-manage-box input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .category-manage-box button { background: var(--primary-color); color: white; border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        .status-graph { display: flex; justify-content: space-between; margin: 30px 0; position: relative; }
+        .status-graph::before { content: ''; position: absolute; top: 25px; left: 10%; right: 10%; height: 4px; background: #ddd; z-index: 1; }
+        .status-step { position: relative; z-index: 2; text-align: center; width: 30%; }
+        .status-dot { width: 50px; height: 50px; border-radius: 50%; background: #ccc; color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-weight: bold; }
+        .status-step.active .status-dot { background: var(--accent-color); }
+        .status-step.complete .status-dot { background: var(--primary-color); }
+
+        .btn { background: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .btn:hover { background: #03335c; }
+        .cross-icon { color: #e74c3c; font-weight: bold; margin-right: 2px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .form-group textarea { height: 150px; resize: vertical; }
+        
+        footer { text-align: center; padding: 20px; font-size: 0.85rem; color: #666; background: #fff; border-top: 1px solid #ddd; margin-top: auto; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-logo">
+            <span style="font-size: 1.8rem; margin-right: 10px;">🏫</span>
+            <span data-i18n="header_title">한세대학교 학생 통합 민원서비스</span>
+        </div>
+        <div class="lang-selector">
+            <button class="active" onclick="changeLang('ko')">KO</button>
+            <button onclick="changeLang('en')">EN</button>
+            <button onclick="changeLang('cn')">CN</button>
+        </div>
+    </header>
+
+    <nav>
+        <a onclick="showPage('home')" data-i18n="nav_home">홈 (민원신청)</a>
+        <a onclick="showPage('status')" data-i18n="nav_status">민원 처리 상태 조회</a>
+        <a onclick="showPage('admin')" data-i18n="nav_admin">최고관리자 모드</a>
+    </nav>
+
+    <div class="container">
+        
+        <!-- [1] 메인 홈 페이지 -->
+        <div id="page-home" class="page active">
+            <h2 data-i18n="home_h2">민원 신청 안내</h2>
+            <div class="welcome-box" data-i18n="home_welcome">
+                안녕하세요. 한세대학교 학생 통합 민원 센터입니다.<br>
+                아래에서 해당되는 민원 부서를 선택하시면 신속하고 정확하게 답변해 드리겠습니다.
+            </div>
+
+            <h3 data-i18n="home_h3">민원 부서 선택</h3>
+            <div id="dept-grid-container" class="dept-grid">
+                <!-- 동적 렌더링 -->
+            </div>
+
+            <!-- 신청서 작성 폼 구역 -->
+            <div id="submit-form-section" style="margin-top: 40px; display: none; border-top: 2px solid var(--primary-color); padding-top: 20px;">
+                <h3 id="form-title"><span class="cross-icon">*</span><span data-i18n="form_title">민원 신청서 작성</span></h3>
+                <form id="complaint-form" onsubmit="handleFormSubmit(event)">
+                    <div class="form-group">
+                        <label for="form-dept" data-i18n="label_dept">선택된 부서</label>
+                        <input type="text" id="form-dept" readonly style="background-color: #eee;">
+                    </div>
+                    <div class="form-group">
+                        <label for="form-name"><span data-i18n="label_name">신청자 성명</span> <span class="cross-icon">*</span></label>
+                        <input type="text" id="form-name" required data-i18n-placeholder="ph_name" placeholder="이름을 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="form-id"><span data-i18n="label_id">학번</span> <span class="cross-icon">*</span></label>
+                        <input type="text" id="form-id" required data-i18n-placeholder="ph_id" placeholder="학번 9자리를 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="form-title-text"><span data-i18n="label_title">민원 제목</span> <span class="cross-icon">*</span></label>
+                        <input type="text" id="form-title-text" required data-i18n-placeholder="ph_title" placeholder="제목을 입력하세요">
+                    </div>
+                    <div class="form-group">
+                        <label for="form-content"><span data-i18n="label_content">민원 내용</span> <span class="cross-icon">*</span></label>
+                        <textarea id="form-content" required data-i18n-placeholder="ph_content" placeholder="상세 내용을 입력해 주세요."></textarea>
+                    </div>
+                    <button type="submit" class="btn" data-i18n="btn_submit">민원 신청 접수하기</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- [2] 민원 처리 상태 조회 페이지 -->
+        <div id="page-status" class="page">
+            <h2 data-i18n="status_h2">민원 처리 현황 및 조회</h2>
+            <div class="welcome-box" data-i18n="status_welcome">
+                접수하신 민원의 진행 현황을 실시간으로 파악할 수 있으며, 전체 통계를 제공합니다.
+            </div>
+
+            <!-- 검색 섹션 -->
+            <div class="search-section">
+                <h3 data-i18n="search_h3">🔍 내 민원 찾기 (학번 또는 신청자 검색)</h3>
+                <div class="search-box">
+                    <input type="text" id="search-input" data-i18n-placeholder="ph_search" placeholder="학번 또는 이름을 입력한 뒤 검색 버튼을 누르세요.">
+                    <button onclick="searchComplaints()" data-i18n="btn_search">검색</button>
+                </div>
+                <ul id="search-results" class="search-results-list"></ul>
+            </div>
+
+            <!-- 통계 그래프 -->
+            <div class="chart-section">
+                <h3 data-i18n="chart_h3">📊 부서별 민원 접수 통계</h3>
+                <div id="chart-container"></div>
+            </div>
+        </div>
+
+        <!-- [3] 최고관리자 설정 페이지 -->
+        <div id="page-admin" class="page">
+            <h2>최고관리자 제어 센터</h2>
+            <p>시스템에 노출되는 민원 전담 부서를 실시간으로 관리하고 접수된 데이터를 제어합니다.</p>
+            
+            <div class="admin-edit-zone">
+                <h3>🛠 민원 부서 추가 및 삭제 관리</h3>
+                <p style="font-size: 0.9rem; color: #666;">추가 버튼을 누르면 홈 화면에 반영되며, 삭제를 원하시면 부서 우측 상단의 X 버튼을 누르세요.</p>
+                <div class="category-manage-box">
+                    <input type="text" id="new-dept-input" placeholder="새로운 행정 부서 이름 입력">
+                    <!-- 신규 부서 추가 시 기본 아이콘 지정을 위해 select 추가 -->
+                    <select id="new-dept-icon" style="width: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="🏢">🏢</option>
+                        <option value="📄">📄</option>
+                        <option value="🙋">🙋</option>
+                        <option value="⛪">⛪</option>
+                        <option value="📚">📚</option>
+                        <option value="💼">💼</option>
+                    </select>
+                    <button onclick="addNewDept()">부서 추가</button>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="btn" style="background:#e74c3c;" onclick="toggleAdminDeleteMode()">부서 편집(삭제) 모드 토글</button>
+                </div>
+            </div>
+
+            <div class="admin-edit-zone" style="margin-top:20px; border-color: #e67e22;">
+                <h3 style="color: #e67e22;">🔄 접수 민원 프로세스 상태 변경 제어 (시뮬레이터)</h3>
+                <p style="font-size:0.9rem;">사용자들이 등록한 가상 민원의 상태를 변경하여 단계별 연동 그래프(접수/처리중/완료)를 테스트해보세요.</p>
+                <div id="admin-complaint-list"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer data-i18n="footer_text">
+        &copy; 2026 한세대학교 학생 통합 민원서비스 시스템. All Rights Reserved.
+    </footer>
+
+    <script>
+        // 다국어 번역 사전 데이터 정의 (KO, EN, CN)
+        const i18nDictionary = {
+            ko: {
+                doc_title: "한세대학교 학생 통합 민원서비스",
+                header_title: "한세대학교 학생 통합 민원서비스",
+                nav_home: "홈 (민원신청)",
+                nav_status: "민원 처리 상태 조회",
+                nav_admin: "최고관리자 모드",
+                home_h2: "민원 신청 안내",
+                home_welcome: "안녕하세요. 한세대학교 학생 통합 민원 센터입니다.<br>아래에서 해당되는 민원 부서를 선택하시면 신속하고 정확하게 답변해 드리겠습니다.",
+                home_h3: "민원 부서 선택",
+                form_title: "민원 신청서 작성",
+                label_dept: "선택된 부서",
+                label_name: "신청자 성명",
+                label_id: "학번",
+                label_title: "민원 제목",
+                label_content: "민원 내용",
+                ph_name: "이름을 입력하세요",
+                ph_id: "학번 9자리를 입력하세요",
+                ph_title: "제목을 입력하세요",
+                ph_content: "상세 내용을 입력해 주세요.",
+                btn_submit: "민원 신청 접수하기",
+                status_h2: "민원 처리 현황 및 조회",
+                status_welcome: "접수하신 민원의 진행 현황을 실시간으로 파악할 수 있으며, 전체 통계를 제공합니다.",
+                search_h3: "🔍 내 민원 찾기 (학번 또는 신청자 검색)",
+                ph_search: "학번 또는 이름을 입력한 뒤 검색 버튼을 누르세요.",
+                btn_search: "검색",
+                chart_h3: "📊 부서별 민원 접수 통계",
+                footer_text: "© 2026 한세대학교 학생 통합 민원서비스 시스템. All Rights Reserved.",
+                status_rec: "접수", status_ing: "처리중", status_end: "완료",
+                step_rec: "민원접수", step_ing: "부서처리중", step_end: "답변완료",
+                msg_add: "부서가 추가되었습니다.",
+                msg_del_confirm: "부서를 정말 삭제하시겠습니까?",
+                msg_success: "민원이 안전하게 정상 접수되었습니다!",
+                msg_status_change: "민원 상태 코드가 변경되었습니다.",
+                no_data: "조회된 민원 정보 내역이 존재하지 않습니다.",
+                no_admin_data: "현재 접수된 민원이 한 건도 없습니다.",
+                units: "건",
+                // 부서명 실시간 다국어 대응 사전
+                "교무처": "교무처", "학생처": "학생처", "교목실": "교목실", "도서관": "도서관", "취창업지원단": "취창업지원단", "행정처": "행정처"
+            },
+            en: {
+                doc_title: "Hansei Univ. Student Complaint Service",
+                header_title: "Hansei University Student Integrated Complaint Service",
+                nav_home: "Home (Apply)",
+                nav_status: "Track Status & Charts",
+                nav_admin: "Admin Center",
+                home_h2: "Complaint Guidelines",
+                home_welcome: "Welcome to Hansei University Student Complaint Center.<br>Please select a department below to receive a fast and accurate response.",
+                home_h3: "Select Department",
+                form_title: "Fill Complaint Form",
+                label_dept: "Selected Department",
+                label_name: "Applicant Name",
+                label_id: "Student ID",
+                label_title: "Title",
+                label_content: "Content",
+                ph_name: "Enter your name",
+                ph_id: "Enter 9-digit Student ID",
+                ph_title: "Enter title here",
+                ph_content: "Enter details here.",
+                btn_submit: "Submit Complaint",
+                status_h2: "Complaint Track & Statistics",
+                status_welcome: "Track your submitted complaints in real-time and view overall department statistics.",
+                search_h3: "🔍 Find My Complaint (Search Name/ID)",
+                ph_search: "Enter Student ID or Name, then click Search.",
+                btn_search: "Search",
+                chart_h3: "📊 Statistics by Department",
+                footer_text: "© 2026 Hansei University Student Complaint System. All Rights Reserved.",
+                status_rec: "Received", status_ing: "Processing", status_end: "Completed",
+                step_rec: "Submitted", step_ing: "In Progress", step_end: "Done",
+                msg_add: "Department successfully added.",
+                msg_del_confirm: "Are you sure you want to delete this department?",
+                msg_success: "Your complaint has been submitted successfully!",
+                msg_status_change: "Complaint status has been updated.",
+                no_data: "No records found matching your query.",
+                no_admin_data: "No complaints received yet.",
+                units: "Case(s)",
+                "교무처": "Academic Affairs", "학생처": "Student Affairs", "교목실": "Chaplain's Office", "도서관": "Library", "취창업지원단": "Career & Startup Support", "행정처": "Administration Office"
+            },
+            cn: {
+                doc_title: "韩世大学学生综合投诉服务",
+                header_title: "韩世大学学生综合投诉服务中心",
+                nav_home: "首页 (提交投诉)",
+                nav_status: "查询处理状态",
+                nav_admin: "最高管理员模式",
+                home_h2: "投诉申请指南",
+                home_welcome: "您好。欢迎访问韩世大学学生综合投诉中心。<br>请在下方选择对应的部门，我们将为您提供快速、准确的回复。",
+                home_h3: "选择投诉部门",
+                form_title: "填写投诉申请书",
+                label_dept: "已选部门",
+                label_name: "申请人姓名",
+                label_id: "学号",
+                label_title: "投诉标题",
+                label_content: "投诉内容",
+                ph_name: "请输入您的姓名",
+                ph_id: "请输入9位学号",
+                ph_title: "请输入标题",
+                ph_content: "请输入详细内容。",
+                btn_submit: "提交申请",
+                status_h2: "投诉处理现状与查询",
+                status_welcome: "您可以实时掌握所提交投诉的进展情况，并查看整体部门统计数据。",
+                search_h3: "🔍 查找我的投诉 (按学号或姓名检索)",
+                ph_search: "输入学号或姓名后点击搜索按钮。",
+                btn_search: "搜索",
+                chart_h3: "📊 各部门投诉受理统计",
+                footer_text: "© 2026 韩世大学学生综合投诉服务系统. 版权所有.",
+                status_rec: "已受理", status_ing: "处理中", status_end: "已完成",
+                step_rec: "提交成功", step_ing: "部门处理中", step_end: "答复完成",
+                msg_add: "部门添加成功。",
+                msg_del_confirm: "确定要删除该部门吗？",
+                msg_success: "您的投诉已成功受理！请在状态查询标签页中查看进度。",
+                msg_status_change: "投诉状态已更新。",
+                no_data: "未找到相关的投诉记录。",
+                no_admin_data: "当前没有任何投诉记录。",
+                units: "件",
+                "교무처": "教务处", "학생처": "学生处", "교목실": "校牧室", "도서관": "图书馆", "취창업지원단": "就业创业支援团", "행정처": "行政处"
+            }
+        };
+
+        let currentLang = 'ko';
+
+        // 지정 부서 리스트 구성 및 매칭 UI 아이콘 설정 데이터 구조
+        let departments = [
+            { name: "교무처", icon: "📄" },
+            { name: "학생처", icon: "🙋" },
+            { name: "교목실", icon: "⛪" },
+            { name: "도서관", icon: "📚" },
+            { name: "취창업지원단", icon: "💼" },
+            { name: "행정처", icon: "🏢" }
+        ];
+        
+        let complaints = [
+            { id: 1, name: "홍길동", studentId: "202400001", dept: "교무처", title: "수강신청 학점 이월 신청", content: "지난 학기 잔여 학점 확인 바랍니다.", status: "status_rec" },
+            { id: 2, name: "김철수", studentId: "202300052", dept: "도서관", title: "희망 도서 신청 결과 문의", content: "도서관 구매 예정일이 궁금합니다.", status: "status_ing" }
+        ];
+
+        function translatePage() {
+            const langData = i18nDictionary[currentLang];
+            
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (langData[key]) {
+                    el.innerHTML = langData[key];
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (langData[key]) {
+                    el.setAttribute('placeholder', langData[key]);
+                }
+            });
+
+            document.title = langData['doc_title'];
+        }
+
+        function changeLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-selector button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            translatePage();
+            renderDepartments();
+            const activePage = document.querySelector('.page.active').id.replace('page-', '');
+            showPage(activePage);
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            
+            if(pageId === 'home') renderDepartments();
+            if(pageId === 'status') { renderChart(); searchComplaints(); }
+            if(pageId === 'admin') renderAdminPanel();
+        }
+
+        // 홈 화면 부서 리스트(아이콘 포함) 렌더링
+        function renderDepartments() {
+            const gridContainer = document.getElementById('dept-grid-container');
+            gridContainer.innerHTML = '';
+            const dict = i18nDictionary[currentLang];
+            
+            departments.forEach(dept => {
+                const card = document.createElement('div');
+                card.className = 'dept-card';
+                
+                // 다국어 번역 명이 사전에 정의되어 있으면 매칭, 없으면 기본 이름 노출
+                const translatedName = dict[dept.name] ? dict[dept.name] : dept.name;
+                
+                card.innerHTML = `<span class="dept-icon">${dept.icon}</span> <span>${translatedName}</span>`;
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-card-btn';
+                delBtn.innerHTML = '&times;';
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteDept(dept.name);
+                };
+                card.appendChild(delBtn);
+
+                card.onclick = () => selectDepartment(translatedName);
+                gridContainer.appendChild(card);
+            });
+        }
+
+        function selectDepartment(translatedName) {
+            document.getElementById('submit-form-section').style.display = 'block';
+            document.getElementById('form-dept').value = translatedName;
+            document.getElementById('form-title-text').focus();
+            document.getElementById('submit-form-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 최고관리자: 부서 추가
+        function addNewDept() {
+            const input = document.getElementById('new-dept-input');
+            const iconSelect = document.getElementById('new-dept-icon');
+            const newName = input.value.trim();
+            const selectedIcon = iconSelect.value;
+            
+            if(!newName) return;
+            
+            // 중복 방지 체크
+            if(departments.some(d => d.name === newName)) {
+                alert("이미 존재하는 부서입니다.");
+                return;
+            }
+
+            departments.push({ name: newName, icon: selectedIcon });
+            input.value = '';
+            alert(i18nDictionary[currentLang]['msg_add']);
+            renderDepartments();
+        }
+
+        function toggleAdminDeleteMode() {
+            document.getElementById('dept-grid-container').classList.toggle('admin-mode');
+        }
+
+        function deleteDept(deptName) {
+            if(confirm(`[${deptName}] ` + i18nDictionary[currentLang]['msg_del_confirm'])) {
+                departments = departments.filter(d => d.name !== deptName);
+                renderDepartments();
+                renderAdminPanel();
+            }
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const dept = document.getElementById('form-dept').value;
+            const name = document.getElementById('form-name').value;
+            const studentId = document.getElementById('form-id').value;
+            const title = document.getElementById('form-title-text').value;
+            const content = document.getElementById('form-content').value;
+
+            complaints.push({
+                id: complaints.length + 1,
+                name: name,
+                studentId: studentId,
+                dept: dept,
+                title: title,
+                content: content,
+                status: "status_rec"
+            });
+
+            alert(i18nDictionary[currentLang]['msg_success']);
+            document.getElementById('complaint-form').reset();
+            document.getElementById('submit-form-section').style.display = 'none';
+            showPage('status');
+        }
+
+        function searchComplaints() {
+            const query = document.getElementById('search-input').value.trim();
+            const resultsList = document.getElementById('search-results');
+            const dict = i18nDictionary[currentLang];
+            resultsList.innerHTML = '';
+
+            const filtered = complaints.filter(c => {
+                if(!query) return true;
+                return c.studentId.includes(query) || c.name.includes(query);
+            });
+
+            if(filtered.length === 0) {
+                resultsList.innerHTML = `<li style="padding:15px; color:#888;">${dict['no_data']}</li>`;
+                return;
+            }
+
+            filtered.forEach(c => {
+                const li = document.createElement('li');
+                li.className = 'search-result-item';
+                
+                li.innerHTML = `
+                    <div style="width: 100%;">
+                        <div class="search-result-info">
+                            <span class="dept-badge">${c.dept}</span>
+                            <strong>${c.title}</strong>
+                            <span class="status-badge ${c.status}">${dict[c.status]}</span>
+                        </div>
+                        <div style="font-size:0.9rem; color:#666; margin-top:5px;">${dict['label_name']}: ${c.name}(${c.studentId})</div>
+                        
+                        <div class="status-graph">
+                            <div class="status-step ${c.status === 'status_rec' ? 'active' : 'complete'}">
+                                <div class="status-dot">1</div>
+                                <div style="font-size:0.8rem;">${dict['step_rec']}</div>
+                            </div>
+                            <div class="status-step ${c.status === 'status_ing' ? 'active' : (c.status === 'status_end' ? 'complete' : '')}">
+                                <div class="status-dot">2</div>
+                                <div style="font-size:0.8rem;">${dict['step_ing']}</div>
+                            </div>
+                            <div class="status-step ${c.status === 'status_end' ? 'active' : ''}">
+                                <div class="status-dot">3</div>
+                                <div style="font-size:0.8rem;">${dict['step_end']}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultsList.appendChild(li);
+            });
+        }
+
+        function renderChart() {
+            const container = document.getElementById('chart-container');
+            const dict = i18nDictionary[currentLang];
+            container.innerHTML = '';
+
+            departments.forEach(dept => {
+                const translatedDeptName = dict[dept.name] ? dict[dept.name] : dept.name;
+                const count = complaints.filter(c => c.dept === translatedDeptName).length;
+                const total = complaints.length || 1;
+                const percent = Math.round((count / total) * 100);
+
+                const barRow = document.createElement('div');
+                barRow.className = 'chart-bar';
+                barRow.innerHTML = `
+                    <div class="chart-label">${translatedDeptName}</div>
+                    <div class="chart-track">
+                        <div class="chart-fill" style="width: ${percent === 0 ? 10 : percent}%; min-width:25px;">${count}${dict['units']}</div>
+                    </div>
+                `;
+                container.appendChild(barRow);
+            });
+        }
+
+        function renderAdminPanel() {
+            const listContainer = document.getElementById('admin-complaint-list');
+            const dict = i18nDictionary[currentLang];
+            listContainer.innerHTML = '';
+
+            if(complaints.length === 0) {
+                listContainer.innerHTML = `<p style="color:#666;">${dict['no_admin_data']}</p>`;
+                return;
+            }
+
+            complaints.forEach(c => {
+                const div = document.createElement('div');
+                div.style = "padding:10px; border-bottom:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;";
+                div.innerHTML = `
+                    <div><strong>[${c.dept}] ${c.title}</strong> - ${dict['label_name']}: ${c.name}</div>
+                    <div>
+                        <select onchange="updateComplaintStatus(${c.id}, this.value)" style="padding:5px;">
+                            <option value="status_rec" ${c.status === 'status_rec' ? 'selected' : ''}>${dict['status_rec']}</option>
+                            <option value="status_ing" ${c.status === 'status_ing' ? 'selected' : ''}>${dict['status_ing']}</option>
+                            <option value="status_end" ${c.status === 'status_end' ? 'selected' : ''}>${dict['status_end']}</option>
+                        </select>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+
+        function updateComplaintStatus(id, newStatus) {
+            const item = complaints.find(c => c.id === id);
+            if(item) {
+                item.status = newStatus;
+                alert(i18nDictionary[currentLang]['msg_status_change']);
+            }
+        }
+
+        window.onload = function() {
+            renderDepartments();
+            translatePage();
+        };
+    </script>
+</body>
+</html>
