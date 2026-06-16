@@ -108,6 +108,10 @@
         
         footer { text-align: center; padding: 20px; font-size: 0.85rem; color: #666; background: #fff; border-top: 1px solid #ddd; margin-top: auto; }
     </style>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+        emailjs.init("pAu1GI2cyGMXQ8qb0");
+    </script>
 </head>
 <body>
 
@@ -395,13 +399,13 @@
                 "주차": "Parking", "대관": "Venue Rental", "시설": "Facilities", "도서문의": "Library Inquiries"
             },
             cn: {
-                doc_title: "韩世大学学生综合投诉服务",
+                doc_title: "韩世大学 student 综合投诉服务",
                 header_title: "学生综合投诉服务中心",
                 nav_home: "首页 (提交投诉)",
                 nav_status: "查询处理状态",
                 nav_admin: "管理员模式",
                 home_h2: "投诉申请指南",
-                ph_home_search: "输入要查找的类别或部门... (例如：奖学金、停车、学籍)",
+                ph_home_search: "输入要查找의 类别或部门... (例如：奖学金、停车、学籍)",
                 home_h3: "选择投诉部门",
                 form_title: "填写投诉申请书",
                 label_dept: "已选部门",
@@ -410,34 +414,34 @@
                 label_id: "学号",
                 label_title: "投诉标题",
                 label_content: "投诉内容",
-                ph_name: "请输入您的姓名",
+                ph_name: "请输入您의 姓名",
                 ph_id: "请输入9位学号",
                 ph_title: "请输入标题",
                 ph_content: "请输入详细内容。",
                 btn_submit: "提交申请",
                 status_h2: "投诉处理现状与查询",
-                status_welcome: "您可以实时掌握所提交投诉的进展情况，并查看整体部门统计数据。",
-                search_h3: "🔍 查找我的投诉 (本人验证)",
+                status_welcome: "您可以实时掌握所提交投诉의 进展情况，并查看整体部门统计数据。",
+                search_h3: "🔍 查找我의 投诉 (本人验证)",
                 ph_search_name: "输入姓名 (例如：洪吉童)",
                 ph_search_id: "输入9位学号 (例如：202400001)",
                 btn_search: "搜索",
                 chart_h3: "📊 各部门投诉受理统计",
-                status_rec: "已受理", status_ing: "处理中", status_end: "已完成",
-                step_rec: "提交成功", step_ing: "部门处理中", step_end: "答复完成",
+                status_rec: "已受理", status_ing: "处理중", status_end: "已完成",
+                step_rec: "提交成功", step_ing: "部门处理중", step_end: "答复完成",
                 msg_add: "部门添加成功。",
                 msg_del_confirm: "确定要删除该部门吗？",
-                msg_success: "您的投诉已成功受理！请在状态查询标签页中查看进度。",
+                msg_success: "您의 投诉已成功受理！请在状态查询标签页中查看进度。",
                 msg_status_change: "投诉状态已更新。",
-                no_data: "请输入准确的姓名与学号以安全查看投诉详情。",
+                no_data: "请输入准确의 姓名与学号以安全查看投诉详情。",
                 no_admin_data: "当前没有任何投诉记录。",
                 units: "件",
                 label_reply_title: "部门回复内容",
-                ph_reply: "在此处输入回复学生的内容。",
+                ph_reply: "在此处输入回复 student 의 内容。",
                 btn_save_reply: "保存回复并完结",
                 msg_reply_saved: "回复已成功保存，状态已变更为已完成。",
                 "교무처": "教务处", "학생처": "学生处", "교목실": "校牧室", "도서관": "图书馆", "취창업지원단": "就业创业支援团", "대학원": "研究生院", "행정처": "行政处",
                 "수업": "课程", "학적": "学籍", "성적": "成绩", "기타": "其他",
-                "장학": "奖学金", "국가근로": "国家勤工助学", "예비군": "预备役",
+                "장학": "奖학금", "국가근로": "国家勤工助学", "예비군": "预备役",
                 "채플": "礼拜",
                 "취업": "就业", "창업": "创业", "현장실습": "现场实习",
                 "입학": "入学",
@@ -788,6 +792,19 @@
                 content: content,
                 status: "status_rec",
                 reply: ""
+            });
+
+            // EmailJS 이메일 알림 발송
+            emailjs.send("service_97hkrnl", "template_6j4fv72", {
+                dept: deptRaw,
+                sub_cat: subCat,
+                name: name,
+                student_id: studentId,
+                title: title,
+                content: content,
+                message: `[${deptRaw}] ${title}\n신청자: ${name} (${studentId})\n내용: ${content}`
+            }).catch(function(error) {
+                console.warn("이메일 발송 실패:", error);
             });
 
             alert(i18nDictionary[currentLang]['msg_success']);
