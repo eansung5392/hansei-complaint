@@ -112,6 +112,22 @@
     <script type="text/javascript">
         emailjs.init("quPod6vamAejAhPRm");
     </script>
+    <!-- Firebase SDK (compat 버전 - 일반 스크립트와 호환) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLmDrdYkYDF06E1aOg-EjQ0otC4PHD9Xc",
+            authDomain: "hansei-complaint.firebaseapp.com",
+            projectId: "hansei-complaint",
+            storageBucket: "hansei-complaint.firebasestorage.app",
+            messagingSenderId: "96860796733",
+            appId: "1:96860796733:web:f0fd887615619ceae2b754",
+            measurementId: "G-F4RL7HHDJP"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
 </head>
 <body>
 
@@ -528,11 +544,17 @@
             }
             if(pageId === 'status') { 
                 document.getElementById('search-name-input').value = ''; 
-                document.getElementById('search-id-input').value = ''; 
-                renderChart(); 
-                searchComplaints(); 
+                document.getElementById('search-id-input').value = '';
+                loadComplaints().then(() => {
+                    renderChart();
+                    searchComplaints();
+                });
             }
-            if(pageId === 'admin') { updateAdminViewState(); }
+            if(pageId === 'admin') {
+                loadComplaints().then(() => {
+                    updateAdminViewState();
+                });
+            }
         }
 
         function renderDepartments(filterQuery = '') {
@@ -772,7 +794,7 @@
             }
         }
 
-        function handleFormSubmit(event) {
+        async function handleFormSubmit(event) {
             event.preventDefault();
             const deptRaw = document.getElementById('form-dept-raw').value;
             const subCatRadio = document.querySelector('input[name="complaint_sub_cat"]:checked');
@@ -782,36 +804,50 @@
             const title = document.getElementById('form-title-text').value;
             const content = document.getElementById('form-content').value;
 
-            complaints.push({
-                id: complaints.length + 1,
+            const submitBtn = document.querySelector('#complaint-form button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "접수 중...";
+
+            const complaintData = {
                 name: name,
                 studentId: studentId,
-                dept: deptRaw, 
+                dept: deptRaw,
                 subCat: subCat,
                 title: title,
                 content: content,
                 status: "status_rec",
                 reply: ""
-            });
+            };
 
-            // EmailJS 이메일 알림 발송
-            emailjs.send("service_97hkrnl", "template_6j4fv72", {
-                dept: deptRaw,
-                sub_cat: subCat,
-                name: name,
-                student_id: studentId,
-                title: title,
-                content: content,
-                message: `[${deptRaw}] ${title}\n신청자: ${name} (${studentId})\n내용: ${content}`
-            }).catch(function(error) {
-                console.warn("이메일 발송 실패:", error);
-            });
+            const firestoreId = await saveComplaintToFirestore(complaintData);
 
-            alert(i18nDictionary[currentLang]['msg_success']);
-            document.getElementById('complaint-form').reset();
-            document.getElementById('submit-form-section').style.display = 'none';
-            selectedDeptObject = null;
-            showPage('status');
+            if(firestoreId) {
+                complaints.unshift({ firestoreId, ...complaintData });
+
+                // EmailJS 이메일 알림 발송
+                emailjs.send("service_97hkrnl", "template_6j4fv72", {
+                    dept: deptRaw,
+                    sub_cat: subCat,
+                    name: name,
+                    student_id: studentId,
+                    title: title,
+                    content: content,
+                    message: `[${deptRaw}] ${title}\n신청자: ${name} (${studentId})\n내용: ${content}`
+                }).catch(function(error) {
+                    console.warn("이메일 발송 실패:", error);
+                });
+
+                alert(i18nDictionary[currentLang]['msg_success']);
+                document.getElementById('complaint-form').reset();
+                document.getElementById('submit-form-section').style.display = 'none';
+                selectedDeptObject = null;
+                showPage('status');
+            } else {
+                alert("민원 접수 중 오류가 발생했습니다. 다시 시도해 주세요.");
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.innerText = i18nDictionary[currentLang]['btn_submit'];
         }
 
         function searchComplaints() {
@@ -935,7 +971,7 @@
                             <span style="font-size:1.05rem; font-weight:bold; margin-left:5px;">${c.title}</span>
                         </div>
                         <div>
-                            <select onchange="updateComplaintStatus(${c.id}, this.value)" id="status-select-${c.id}" style="padding:6px; font-weight:bold; border-color:var(--primary-color); border-radius:4px;">
+                            <select onchange="updateComplaintStatus('${c.firestoreId}', this.value)" id="status-select-${c.firestoreId}" style="padding:6px; font-weight:bold; border-color:var(--primary-color); border-radius:4px;">
                                 <option value="status_rec" ${c.status === 'status_rec' ? 'selected' : ''}>${dict['status_rec']}</option>
                                 <option value="status_ing" ${c.status === 'status_ing' ? 'selected' : ''}>${dict['status_ing']}</option>
                                 <option value="status_end" ${c.status === 'status_end' ? 'selected' : ''}>${dict['status_end']}</option>
@@ -948,36 +984,78 @@
                     
                     <div class="reply-input-zone">
                         <label style="font-weight:bold; font-size:0.9rem; display:block; margin-bottom:6px; color:var(--primary-color);">✍️ 담당 부서 답변 작성</label>
-                        <textarea id="reply-textarea-${c.id}" placeholder="${dict['ph_reply']}" style="width:100%; height:80px; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:0.9rem; resize:vertical; box-sizing:border-box;">${c.reply || ''}</textarea>
-                        <button onclick="saveComplaintReply(${c.id})" class="btn" style="margin-top:8px; padding:8px 15px; font-size:0.85rem; background:#e67e22;">${dict['btn_save_reply']}</button>
+                        <textarea id="reply-textarea-${c.firestoreId}" placeholder="${dict['ph_reply']}" style="width:100%; height:80px; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:0.9rem; resize:vertical; box-sizing:border-box;">${c.reply || ''}</textarea>
+                        <button onclick="saveComplaintReply('${c.firestoreId}')" class="btn" style="margin-top:8px; padding:8px 15px; font-size:0.85rem; background:#e67e22;">${dict['btn_save_reply']}</button>
                     </div>
                 `;
                 listContainer.appendChild(card);
             });
         }
 
-        function saveComplaintReply(id) {
-            const replyText = document.getElementById(`reply-textarea-${id}`).value.trim();
-            const item = complaints.find(c => c.id === id);
+        async function saveComplaintReply(firestoreId) {
+            const item = complaints.find(c => c.firestoreId === firestoreId);
+            const replyText = document.getElementById(`reply-textarea-${firestoreId}`).value.trim();
             const dict = i18nDictionary[currentLang];
-            
+
             if(item) {
+                await updateComplaintInFirestore(firestoreId, {
+                    reply: replyText,
+                    status: "status_end"
+                });
                 item.reply = replyText;
                 item.status = "status_end";
-                document.getElementById(`status-select-${id}`).value = "status_end";
+                document.getElementById(`status-select-${firestoreId}`).value = "status_end";
                 alert(dict['msg_reply_saved']);
                 renderAdminPanel();
             }
         }
 
-        function updateComplaintStatus(id, newStatus) {
-            const item = complaints.find(c => c.id === id);
+        async function updateComplaintStatus(firestoreId, newStatus) {
+            const item = complaints.find(c => c.firestoreId === firestoreId);
             if(item) {
                 item.status = newStatus;
+                await updateComplaintInFirestore(firestoreId, { status: newStatus });
             }
         }
 
-        window.onload = function() {
+        // Firestore에서 민원 불러오기
+        async function loadComplaints() {
+            try {
+                const snapshot = await db.collection("complaints").orderBy("createdAt", "desc").get();
+                complaints = [];
+                snapshot.forEach(docSnap => {
+                    complaints.push({ firestoreId: docSnap.id, ...docSnap.data() });
+                });
+            } catch(e) {
+                console.error("민원 불러오기 실패:", e);
+            }
+        }
+
+        // Firestore에 민원 저장
+        async function saveComplaintToFirestore(complaintData) {
+            try {
+                const docRef = await db.collection("complaints").add({
+                    ...complaintData,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                return docRef.id;
+            } catch(e) {
+                console.error("민원 저장 실패:", e);
+                return null;
+            }
+        }
+
+        // Firestore 민원 상태/답변 업데이트
+        async function updateComplaintInFirestore(firestoreId, updateData) {
+            try {
+                await db.collection("complaints").doc(firestoreId).update(updateData);
+            } catch(e) {
+                console.error("민원 업데이트 실패:", e);
+            }
+        }
+
+        window.onload = async function() {
+            await loadComplaints();
             renderDepartments();
             translatePage();
         };
